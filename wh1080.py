@@ -6,7 +6,8 @@ import math
 import os
 import threading
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import requests
 import paho.mqtt.client as mqtt
@@ -97,8 +98,8 @@ WIND_DIR_RANGE = (0.0, 360.0)      # degrees
 # (rain / rain_today), it only discards the corrupt one-off "spike".
 RAIN_RATE_SANITY_MAX_MMH = 500.0
 
-# Argentina / Buenos Aires
-LOCAL_TZ = timezone(timedelta(hours=-3))
+# Hungary: daylight saving time handled automatically (CET / CEST).
+LOCAL_TZ = ZoneInfo("Europe/Budapest")
 
 DISCOVERY_PREFIX = "homeassistant"
 DEVICE_ID = "wh1080_usb"
@@ -409,23 +410,12 @@ def wind_direction_text(degrees):
         return None
 
     try:
+        # Hungarian compass abbreviations in clockwise order.
         directions = [
-            "N",
-            "NNE",
-            "NE",
-            "ENE",
-            "E",
-            "ESE",
-            "SE",
-            "SSE",
-            "S",
-            "SSW",
-            "SW",
-            "WSW",
-            "W",
-            "WNW",
-            "NW",
-            "NNW",
+            "É", "ÉÉK", "ÉK", "KÉK",
+            "K", "KDK", "DK", "DDK",
+            "D", "DDNy", "DNy", "NyDNy",
+            "Ny", "NyÉNy", "ÉNy", "ÉÉNy",
         ]
 
         index = int((float(degrees) + 11.25) / 22.5) % 16
@@ -543,7 +533,7 @@ def validate_rain(rain_total):
 
 def update_daily_stats(data):
     now_local = datetime.now(LOCAL_TZ)
-    today = now_local.strftime("%d/%m/%Y")
+    today = now_local.strftime("%Y.%m.%d.")
 
     with stats_lock:
 
@@ -552,7 +542,7 @@ def update_daily_stats(data):
 
         # Human-readable format with year, including the sensed value
         # (built below, value by value, with its unit).
-        timestamp = now_local.strftime("%d/%m/%Y %H:%M:%S")
+        timestamp = now_local.strftime("%Y.%m.%d. %H:%M:%S")
 
         wind = data.get("wind_kmh")
         gust = data.get("wind_gust_kmh")
@@ -875,7 +865,7 @@ def publish_discovery():
 
     device = {
         "identifiers": [DEVICE_ID],
-        "name": "WH1080",
+        "name": "Hyundai WH1080 időjárásállomás",
         "manufacturer": "Fine Offset",
         "model": "WH1080",
     }
@@ -888,7 +878,7 @@ def publish_discovery():
 
         (
             "temperature_outside",
-            "Temperature Outside",
+            "Kültéri hőmérséklet",
             "temp_out",
             TEMP_SYMBOL,
             "temperature",
@@ -897,7 +887,7 @@ def publish_discovery():
 
         (
             "temperature_inside",
-            "Temperature Inside",
+            "Beltéri hőmérséklet",
             "temp_in",
             TEMP_SYMBOL,
             "temperature",
@@ -910,7 +900,7 @@ def publish_discovery():
 
         (
             "humidity_outside",
-            "Humidity Outside",
+            "Kültéri relatív páratartalom",
             "hum_out",
             "%",
             "humidity",
@@ -919,7 +909,7 @@ def publish_discovery():
 
         (
             "humidity_inside",
-            "Humidity Inside",
+            "Beltéri relatív páratartalom",
             "hum_in",
             "%",
             "humidity",
@@ -932,7 +922,7 @@ def publish_discovery():
 
         (
             "pressure",
-            "Absolute Pressure",
+            "Abszolút légnyomás",
             "abs_pressure",
             PRESSURE_SYMBOL,
             "pressure",
@@ -945,7 +935,7 @@ def publish_discovery():
 
         (
             "wind_speed",
-            "Wind Speed",
+            "Szélsebesség",
             "wind_kmh",
             WIND_SPEED_SYMBOL,
             "wind_speed",
@@ -954,7 +944,7 @@ def publish_discovery():
 
         (
             "wind_gust",
-            "Wind Gust",
+            "Széllökés sebessége",
             "wind_gust_kmh",
             WIND_SPEED_SYMBOL,
             "wind_speed",
@@ -963,7 +953,7 @@ def publish_discovery():
 
         (
             "wind_direction",
-            "Wind Direction",
+            "Szélirány",
             "wind_dir",
             "°",
             None,
@@ -972,7 +962,7 @@ def publish_discovery():
 
         (
             "wind_direction_text",
-            "Wind Direction Cardinal",
+            "Szélirány (égtáj)",
             "wind_dir_text",
             None,
             None,
@@ -985,7 +975,7 @@ def publish_discovery():
 
         (
             "rain",
-            "Rain Total",
+            "Összesített csapadékmennyiség",
             "rain",
             RAIN_SYMBOL,
             None,
@@ -994,7 +984,7 @@ def publish_discovery():
 
         (
             "rain_rate",
-            "Rain Rate",
+            "Csapadékintenzitás",
             "rain_rate",
             RAIN_RATE_SYMBOL,
             "precipitation_intensity",
@@ -1003,7 +993,7 @@ def publish_discovery():
 
         (
             "rain_today",
-            "Rain Today",
+            "Mai csapadékmennyiség",
             "rain_today",
             RAIN_SYMBOL,
             None,
@@ -1016,7 +1006,7 @@ def publish_discovery():
 
         (
             "dew_point",
-            "Dew Point",
+            "Harmatpont",
             "dew_point",
             TEMP_SYMBOL,
             "temperature",
@@ -1025,7 +1015,7 @@ def publish_discovery():
 
         (
             "wind_chill",
-            "Wind Chill",
+            "Szélhűtés szerinti hőérzet",
             "wind_chill",
             TEMP_SYMBOL,
             "temperature",
@@ -1038,7 +1028,7 @@ def publish_discovery():
 
         (
             "max_wind",
-            "Maximum Wind Today",
+            "Mai legnagyobb szélsebesség",
             "max_wind_kmh",
             WIND_SPEED_SYMBOL,
             "wind_speed",
@@ -1047,7 +1037,7 @@ def publish_discovery():
 
         (
             "max_gust",
-            "Maximum Gust Today",
+            "Mai legnagyobb széllökés",
             "max_gust_kmh",
             WIND_SPEED_SYMBOL,
             "wind_speed",
@@ -1060,7 +1050,7 @@ def publish_discovery():
 
         (
             "min_temperature_today",
-            "Minimum Temperature Today",
+            "Mai legalacsonyabb hőmérséklet",
             "min_temp_out",
             TEMP_SYMBOL,
             "temperature",
@@ -1069,7 +1059,7 @@ def publish_discovery():
 
         (
             "max_temperature_today",
-            "Maximum Temperature Today",
+            "Mai legmagasabb hőmérséklet",
             "max_temp_out",
             TEMP_SYMBOL,
             "temperature",
@@ -1082,7 +1072,7 @@ def publish_discovery():
 
         (
             "min_humidity_today",
-            "Minimum Humidity Today",
+            "Mai legalacsonyabb páratartalom",
             "min_hum_out",
             "%",
             "humidity",
@@ -1091,7 +1081,7 @@ def publish_discovery():
 
         (
             "max_humidity_today",
-            "Maximum Humidity Today",
+            "Mai legmagasabb páratartalom",
             "max_hum_out",
             "%",
             "humidity",
@@ -1143,43 +1133,43 @@ def publish_discovery():
 
         (
             "max_gust_time",
-            "Maximum Gust Time",
+            "Mai legnagyobb széllökés időpontja",
             "max_gust_time",
         ),
 
         (
             "max_wind_time",
-            "Maximum Wind Time",
+            "Mai legnagyobb szélsebesség időpontja",
             "max_wind_time",
         ),
 
         (
             "min_temp_time",
-            "Minimum Temperature Time",
+            "Mai legalacsonyabb hőmérséklet időpontja",
             "min_temp_out_time",
         ),
 
         (
             "max_temp_time",
-            "Maximum Temperature Time",
+            "Mai legmagasabb hőmérséklet időpontja",
             "max_temp_out_time",
         ),
 
         (
             "min_hum_time",
-            "Minimum Humidity Time",
+            "Mai legalacsonyabb páratartalom időpontja",
             "min_hum_out_time",
         ),
 
         (
             "max_hum_time",
-            "Maximum Humidity Time",
+            "Mai legmagasabb páratartalom időpontja",
             "max_hum_out_time",
         ),
 
         (
             "stats_date",
-            "Statistics Date",
+            "Statisztika dátuma",
             "stats_date",
         ),
     ]
@@ -1214,7 +1204,7 @@ def publish_discovery():
     # --------------------------------------------------------
 
     binary_payload = {
-        "name": "WH1080 Connection",
+        "name": "Időjárásállomás kapcsolata",
         "unique_id": f"{DEVICE_ID}_connection",
         "state_topic": "wh1080/availability",
         "payload_on": "online",
@@ -1605,4 +1595,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
