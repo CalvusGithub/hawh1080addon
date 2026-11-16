@@ -1,5 +1,5 @@
 name: WH1080 USB Weather Station
-version: "1.0.0.Calvus"
+version: "1.0.1.Calvus"
 slug: wh1080_usb
 description: >-
   Reads a Fine Offset WH1080 weather station directly over USB
