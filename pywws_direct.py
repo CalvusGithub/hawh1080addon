@@ -18,7 +18,7 @@ class DirectCUSBDrive:
     def __init__(self):
         print("DirectCUSBDrive: initializing")
 
-        self.dev = DirectHID("/dev/hidraw0")
+        self.dev = DirectHID("/dev/hidraw1")
 
         print("DirectCUSBDrive: OK")
 
