@@ -1,4 +1,5 @@
 import pywws.weatherstation as ws
+import json
 
 from direct_backend import DirectHID
 
@@ -18,7 +19,10 @@ class DirectCUSBDrive:
     def __init__(self):
         print("DirectCUSBDrive: initializing")
 
-        self.dev = DirectHID("/dev/hidraw1")
+        with open("/data/options.json", encoding="utf-8") as f:
+            device_path = json.load(f).get("device", "/dev/hidraw0")
+        
+        self.dev = DirectHID(device_path)
 
         print("DirectCUSBDrive: OK")
 
